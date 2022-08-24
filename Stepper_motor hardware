@@ -1,0 +1,82 @@
+	  #include <LPC214x.h>
+void  delay();
+void ADC_init();
+void ADC_read();
+unsigned int result,val1;
+
+
+void ADC_init()
+{
+    AD0CR &= 0x00000000;  //clr
+    AD0CR|=0x00000008;//AD0.3
+    AD0CR|=0x00000200;//clk
+    AD0CR |= 0x00010000;//bu
+    AD0CR &= 0xFFF1FFFF;
+    AD0CR |= 0x00200000;//pdn
+    AD0CR |= 0x01000000;//normal
+    AD0INTEN|=0x00000002;
+}
+
+void ADC_read()
+{
+    do
+    {
+      val1=AD0DR3 ;
+    }  
+    while((val1 & 0x80000000)==0);
+    result=AD0DR3;
+    result = ((result >> 6) & 0x03FF)+20; 
+}
+void delay()
+{
+  int i,j;
+  for(i=0;i<0xff;i++)
+     for(j=0;j<(result/2);j++);
+}
+
+
+int main()
+{
+  int num=0x08,val=0x00;
+  char rotate=0;
+  PINSEL1 = 0x10000400;      
+  ADC_init();
+  IO0DIR=0x000F0000;
+  while(1)
+  {
+   ADC_read();
+   if(rotate==1)
+   {
+    IO0CLR=val;
+    val=(num<<16);
+    num=num*2;
+    IO0SET=val;
+    if(num>8)
+      num=1;
+    delay();
+   }
+   else
+   {
+    IO0CLR=val;
+    val=(num<<16);
+    num=num/2;
+    IO0SET=val;
+    if(num<1)
+      num=0x08;
+    delay();
+   }
+ 
+   if(!(IO0PIN & 0x00008000))
+   {
+     while(!(IO0PIN & 0x00008000));
+     num=8;
+     rotate=1;
+   }
+   else if(!(IO0PIN & 0x00100000)) 
+   {
+     while(!(IO0PIN & 0x00100000));
+     num=1;
+     rotate=0;
+   }
+  }
+}
