@@ -1,0 +1,68 @@
+#include <LPC214x.h>
+ unsigned int result,val1;
+
+
+    
+
+void ADC_init()
+{
+    AD0CR &= 0x00000000;  //clr
+    AD0CR|=0x00000008;//AD0.3
+    AD0CR|=0x00000200;//clk
+    AD0CR |= 0x00010000;//bu
+    AD0CR &= 0xFFF1FFFF;
+    AD0CR |= 0x00200000;//pdn
+    AD0CR |= 0x01000000;//normal
+    AD0INTEN|=0x00000002;
+}
+
+void PWM_init()
+{
+    PWMTCR = 0x02;              //pwm reset
+    PWMPR = 0;                  //prescaler disable
+    PWMPCR = 0x2000;            //PWM5 enabled - single edge
+    PWMMCR = 0x00000002;        //reset on PWMMR0
+    PWMMR0 = 0x0000ffff;        //set pwm frequency
+    PWMMR5 = 0x000000ff;        //set pwm5 duty cycle
+    PWMLER = 0x21;              //latch new match entries
+    PWMTCR = 0x09;              //enable PWM*/
+}
+
+void ADC_read()
+{
+    do
+    {
+      val1=AD0DR3 ;
+    }  
+    while((val1 & 0x80000000)==0);
+    result=AD0DR3;
+    result = (result >> 6) & 0x03ff;
+	 
+}
+int main(void)
+{
+    int	i,j;
+    
+    PINSEL1 = 0x10000400;      
+    ADC_init();
+    
+
+    IO0DIR=0x0FF00000;
+	
+
+    while(1)
+    {
+        ADC_read();
+        
+        for(i=0;i<(result*80);i+=10)
+        {
+          IO0SET=0x02000000;
+        }
+        for(i=0;i<0x2FF0;i+=10)
+        {
+          IO0CLR=0x02000000;
+          for(j=0;j<10;j++);
+        }
+
+    }
+}
